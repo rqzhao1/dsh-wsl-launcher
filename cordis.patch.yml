@@ -1,0 +1,24 @@
+# dsh-wsl-launcher bundle layer -- applied when a profile lists this bundle
+# (package.json's `dsh.bundle.patch` points at this file; `dsh plugin add`
+# reconciles the package into the profile's bundle stack automatically).
+# `name` is the package name (resolved from the profile's node_modules),
+# not a relative path.
+#
+# The autostop settings are read from the environment at boot:
+#   DSH_WEB_AUTOSTOP=1            enable "stop the server when every browser
+#                                 tab is closed" (the launcher script exports
+#                                 it when it starts the background daemon)
+#   DSH_WEB_AUTOSTOP_GRACE_MS     idle window before shutdown (default 30000)
+#   DSH_WEB_AUTOSTOP_MIN_UPTIME_MS startup grace before any shutdown (default
+#                                 45000 -- covers page load + first beat)
+- insert:
+    - id: wsl-launcher
+      name: dsh-wsl-launcher
+      # webServer feeds the optional autostop feature (lib/autostop.js).
+      # On a non-web host this row simply fails to load (the loader
+      # continues without it) and the plugin is absent.
+      inject: [webServer]
+      config:
+        autostopEnabled: !!js process.env.DSH_WEB_AUTOSTOP === '1'
+        autostopGraceMs: !!js (Number(process.env.DSH_WEB_AUTOSTOP_GRACE_MS) || 30000)
+        autostopMinUptimeMs: !!js (Number(process.env.DSH_WEB_AUTOSTOP_MIN_UPTIME_MS) || 45000)
